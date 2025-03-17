@@ -9,6 +9,7 @@ public class ScreenCaptureOverlay : Form
     private Rectangle previousRect;
     private bool isSelecting = false;
     private bool hasSelection = false;
+    private Region? invalidRegion;
 
     public event EventHandler<Bitmap>? ScreenshotCaptured;
 
@@ -38,6 +39,9 @@ public class ScreenCaptureOverlay : Form
         this.MouseMove += OnMouseMove;
         this.MouseUp += OnMouseUp;
         this.KeyDown += OnKeyDown;
+        
+        // Add handler for proper cleanup when form closes
+        this.FormClosing += OnFormClosing;
     }
 
     private void OnMouseDown(object? sender, MouseEventArgs e)
@@ -49,6 +53,8 @@ public class ScreenCaptureOverlay : Form
             startPoint = e.Location;
             selectionRect = new Rectangle();
             previousRect = Rectangle.Empty;
+            invalidRegion?.Dispose();
+            invalidRegion = null;
             this.Invalidate();
         }
     }
@@ -68,13 +74,15 @@ public class ScreenCaptureOverlay : Form
 
         selectionRect = new Rectangle(x, y, width, height);
         
-        // Invalidate only the affected region for better performance
         // Create a region that encompasses both the previous and current selection
         Rectangle invalidateRect = Rectangle.Union(previousRect, selectionRect);
         
         // Add some padding to ensure complete coverage of the border
         invalidateRect.Inflate(3, 3);
         
+        // Use region for more efficient invalidation
+        invalidRegion?.Dispose();
+        invalidRegion = new Region(invalidateRect);
         this.Invalidate(invalidateRect);
     }
 
@@ -96,9 +104,25 @@ public class ScreenCaptureOverlay : Form
         }
     }
 
+    private void OnFormClosing(object? sender, FormClosingEventArgs e)
+    {
+        // Clean up resources and unregister event handlers
+        this.MouseDown -= OnMouseDown;
+        this.MouseMove -= OnMouseMove;
+        this.MouseUp -= OnMouseUp;
+        this.KeyDown -= OnKeyDown;
+        this.FormClosing -= OnFormClosing;
+        
+        // Clean up any unmanaged resources
+        invalidRegion?.Dispose();
+        invalidRegion = null;
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
+        
+        // Only paint if we have a valid selection with dimensions
         if (hasSelection && selectionRect.Width > 0 && selectionRect.Height > 0)
         {
             // Create a semi-transparent white fill for the selection area
@@ -129,27 +153,56 @@ public class ScreenCaptureOverlay : Form
             return;
         }
 
+        Bitmap? capturedBitmap = null;
         try
         {
             // Create a bitmap of the selection area
-            using var bitmap = new Bitmap(selectionRect.Width, selectionRect.Height);
-            using var g = Graphics.FromImage(bitmap);
+            capturedBitmap = new Bitmap(selectionRect.Width, selectionRect.Height);
             
-            // Get screen coordinates
-            var screenPoint = this.PointToScreen(new Point(selectionRect.X, selectionRect.Y));
-            
-            // Capture the screen portion
-            g.CopyFromScreen(screenPoint, Point.Empty, selectionRect.Size);
+            using (var g = Graphics.FromImage(capturedBitmap))
+            {
+                // Get screen coordinates
+                var screenPoint = this.PointToScreen(new Point(selectionRect.X, selectionRect.Y));
+                
+                // Configure graphics for better quality
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                
+                // Capture the screen portion
+                g.CopyFromScreen(screenPoint, Point.Empty, selectionRect.Size);
+            }
             
             // Copy the image to clipboard
-            Clipboard.SetImage(bitmap);
+            Clipboard.SetImage(capturedBitmap);
             
-            // Raise the event with the captured image
-            ScreenshotCaptured?.Invoke(this, bitmap);
+            // Create a copy for the event handler if needed
+            if (ScreenshotCaptured != null)
+            {
+                // Make a deep copy for the event handler
+                using var tempBitmap = new Bitmap(capturedBitmap);
+                // Raise the event with the copied image
+                ScreenshotCaptured?.Invoke(this, tempBitmap);
+            }
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Error capturing screenshot: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+        finally
+        {
+            // Always dispose of the bitmap
+            capturedBitmap?.Dispose();
+        }
+    }
+    
+    // Ensure proper disposal when the form is disposed
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            invalidRegion?.Dispose();
+        }
+        base.Dispose(disposing);
     }
 }
