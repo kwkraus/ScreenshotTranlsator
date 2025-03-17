@@ -7,6 +7,7 @@ public class ScreenCaptureOverlay : Form
     private Point startPoint;
     private Rectangle selectionRect;
     private bool isSelecting = false;
+    private bool hasSelection = false;
 
     public event EventHandler<Bitmap>? ScreenshotCaptured;
 
@@ -24,6 +25,7 @@ public class ScreenCaptureOverlay : Form
         this.Opacity = 0.3;
         this.Cursor = Cursors.Cross;
         this.TopMost = true;
+        this.DoubleBuffered = true;  // Add double buffering to reduce flicker
 
         // Handle mouse events
         this.MouseDown += OnMouseDown;
@@ -37,8 +39,10 @@ public class ScreenCaptureOverlay : Form
         if (e.Button == MouseButtons.Left)
         {
             isSelecting = true;
+            hasSelection = true;
             startPoint = e.Location;
             selectionRect = new Rectangle();
+            this.Invalidate();
         }
     }
 
@@ -76,22 +80,15 @@ public class ScreenCaptureOverlay : Form
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
-        if (isSelecting)
+        if (hasSelection && selectionRect.Width > 0 && selectionRect.Height > 0)
         {
             // Clear the selection area to make it transparent
             using var clearBrush = new SolidBrush(Color.FromArgb(0, 0, 0, 0));
             e.Graphics.FillRectangle(clearBrush, selectionRect);
 
-            // Draw the red border
-            using var pen = new Pen(Color.Red, 2);
-            e.Graphics.DrawRectangle(pen, selectionRect);
-
-            // Draw the dimmed area outside the selection
-            using var dimBrush = new SolidBrush(Color.FromArgb(128, 0, 0, 0));
-            e.Graphics.FillRectangle(dimBrush, new Rectangle(0, 0, this.Width, selectionRect.Top)); // Top
-            e.Graphics.FillRectangle(dimBrush, new Rectangle(0, selectionRect.Bottom, this.Width, this.Height - selectionRect.Bottom)); // Bottom
-            e.Graphics.FillRectangle(dimBrush, new Rectangle(0, selectionRect.Top, selectionRect.Left, selectionRect.Height)); // Left
-            e.Graphics.FillRectangle(dimBrush, new Rectangle(selectionRect.Right, selectionRect.Top, this.Width - selectionRect.Right, selectionRect.Height)); // Right
+            // Draw a thin white border (inner border)
+            using var whitePen = new Pen(Color.White, 4);
+            e.Graphics.DrawRectangle(whitePen, selectionRect);
         }
     }
 
