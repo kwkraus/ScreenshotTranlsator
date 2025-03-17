@@ -121,6 +121,10 @@ public partial class Form1 : Form
             this.WindowState = FormWindowState.Minimized;
             this.Hide();
         }
+        else
+        {
+            globalHook?.Dispose(); // Ensure global hook is disposed
+        }
     }
 
     private void Form1_Shown(object? sender, EventArgs e)
