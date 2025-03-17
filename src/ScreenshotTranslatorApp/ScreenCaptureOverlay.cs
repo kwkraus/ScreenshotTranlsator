@@ -122,7 +122,12 @@ public class ScreenCaptureOverlay : Form
 
     private void CaptureScreenshot()
     {
-        if (selectionRect.Width <= 0 || selectionRect.Height <= 0) return;
+        if (selectionRect.Width <= 5 || selectionRect.Height <= 5)
+        {
+            MessageBox.Show("Selection area is too small. Please make a larger selection.", 
+                "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
 
         try
         {
@@ -135,6 +140,9 @@ public class ScreenCaptureOverlay : Form
             
             // Capture the screen portion
             g.CopyFromScreen(screenPoint, Point.Empty, selectionRect.Size);
+            
+            // Copy the image to clipboard
+            Clipboard.SetImage(bitmap);
             
             // Raise the event with the captured image
             ScreenshotCaptured?.Invoke(this, bitmap);
