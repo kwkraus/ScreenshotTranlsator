@@ -6,6 +6,7 @@ public class ScreenCaptureOverlay : Form
 {
     private Point startPoint;
     private Rectangle selectionRect;
+    private Rectangle previousRect;
     private bool isSelecting = false;
     private bool hasSelection = false;
 
@@ -25,7 +26,12 @@ public class ScreenCaptureOverlay : Form
         this.Opacity = 0.3;
         this.Cursor = Cursors.Cross;
         this.TopMost = true;
-        this.DoubleBuffered = true;  // Add double buffering to reduce flicker
+        
+        // Improve rendering performance
+        this.DoubleBuffered = true;
+        this.SetStyle(ControlStyles.OptimizedDoubleBuffer | 
+                     ControlStyles.AllPaintingInWmPaint |
+                     ControlStyles.UserPaint, true);
 
         // Handle mouse events
         this.MouseDown += OnMouseDown;
@@ -42,6 +48,7 @@ public class ScreenCaptureOverlay : Form
             hasSelection = true;
             startPoint = e.Location;
             selectionRect = new Rectangle();
+            previousRect = Rectangle.Empty;
             this.Invalidate();
         }
     }
@@ -50,13 +57,25 @@ public class ScreenCaptureOverlay : Form
     {
         if (!isSelecting) return;
 
+        // Store the previous rectangle for efficient invalidation
+        previousRect = selectionRect;
+
+        // Calculate the new selection rectangle
         int x = Math.Min(startPoint.X, e.X);
         int y = Math.Min(startPoint.Y, e.Y);
         int width = Math.Abs(e.X - startPoint.X);
         int height = Math.Abs(e.Y - startPoint.Y);
 
         selectionRect = new Rectangle(x, y, width, height);
-        this.Invalidate();
+        
+        // Invalidate only the affected region for better performance
+        // Create a region that encompasses both the previous and current selection
+        Rectangle invalidateRect = Rectangle.Union(previousRect, selectionRect);
+        
+        // Add some padding to ensure complete coverage of the border
+        invalidateRect.Inflate(3, 3);
+        
+        this.Invalidate(invalidateRect);
     }
 
     private void OnMouseUp(object? sender, MouseEventArgs e)
@@ -82,13 +101,22 @@ public class ScreenCaptureOverlay : Form
         base.OnPaint(e);
         if (hasSelection && selectionRect.Width > 0 && selectionRect.Height > 0)
         {
-            // Clear the selection area to make it transparent
-            using var clearBrush = new SolidBrush(Color.FromArgb(0, 0, 0, 0));
-            e.Graphics.FillRectangle(clearBrush, selectionRect);
-
-            // Draw a thin white border (inner border)
-            using var whitePen = new Pen(Color.White, 4);
+            // Create a semi-transparent white fill for the selection area
+            using var selectionBrush = new SolidBrush(Color.FromArgb(50, 255, 255, 255));
+            e.Graphics.FillRectangle(selectionBrush, selectionRect);
+            
+            // Draw a border - white inner border with a dark outer border for contrast
+            using var whitePen = new Pen(Color.White, 1.5f);
             e.Graphics.DrawRectangle(whitePen, selectionRect);
+            
+            // Draw second border (outer) to improve visibility against different backgrounds
+            using var darkPen = new Pen(Color.FromArgb(150, 0, 0, 0), 1);
+            Rectangle outerRect = new Rectangle(
+                selectionRect.X - 1, 
+                selectionRect.Y - 1, 
+                selectionRect.Width + 2, 
+                selectionRect.Height + 2);
+            e.Graphics.DrawRectangle(darkPen, outerRect);
         }
     }
 
