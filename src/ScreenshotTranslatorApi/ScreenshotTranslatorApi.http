@@ -1,0 +1,13 @@
+@host = http://localhost:5107
+
+### Test Authenticate endpoint
+POST {{host}}/authenticate
+Content-Type: application/json
+
+{}
+
+### Test ProcessScreenshot endpoint
+POST {{host}}/processscreenshot/process-screenshot
+Content-Type: application/json
+
+{}
