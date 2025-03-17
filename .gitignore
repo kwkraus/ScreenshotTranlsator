@@ -40,6 +40,9 @@ artifacts/
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# Ignore the .vscode folder
+.vscode/
+
 # ReSharper
 _ReSharper*/
 *.[Rr]e[Ss]harper
