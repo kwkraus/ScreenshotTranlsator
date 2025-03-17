@@ -78,7 +78,12 @@ public class ScreenCaptureOverlay : Form
         base.OnPaint(e);
         if (isSelecting)
         {
-            using var pen = new Pen(Color.White, 1);
+            // Clear the selection area to make it transparent
+            using var clearBrush = new SolidBrush(Color.FromArgb(0, 0, 0, 0));
+            e.Graphics.FillRectangle(clearBrush, selectionRect);
+
+            // Draw the red border
+            using var pen = new Pen(Color.Red, 2);
             e.Graphics.DrawRectangle(pen, selectionRect);
         }
     }
