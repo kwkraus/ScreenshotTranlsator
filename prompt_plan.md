@@ -191,10 +191,10 @@ Below is a series of prompts to guide a code-generation LLM, walking through eac
 
 ```text
 [Task]
-Create a new .NET Windows Forms application named "ScreenshotTranslatorApp" inside a solution called "ScreenshotTranslatorSolution". Add a tray icon that displays a tooltip "Screenshot Translator Running". On application start, the tray icon should appear in the system tray.
+Within the src folder, create a new .NET Windows Forms application named "ScreenshotTranslatorApp" inside a solution called "ScreenshotTranslatorSolution". Add a tray icon that displays a tooltip "Screenshot Translator Running". On application start, the tray icon should appear in the system tray.
 
 [Notes]
-- Use .NET 6 if possible, or any LTS version.
+- Use .NET 8 if possible, or any LTS version.
 - Show a minimal form on double-clicking the tray icon with a "Hello World" label inside.
 - Provide any required instructions for setup in the project file or Program.cs comments.
 ```
