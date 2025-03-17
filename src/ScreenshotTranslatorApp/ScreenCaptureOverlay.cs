@@ -85,6 +85,13 @@ public class ScreenCaptureOverlay : Form
             // Draw the red border
             using var pen = new Pen(Color.Red, 2);
             e.Graphics.DrawRectangle(pen, selectionRect);
+
+            // Draw the dimmed area outside the selection
+            using var dimBrush = new SolidBrush(Color.FromArgb(128, 0, 0, 0));
+            e.Graphics.FillRectangle(dimBrush, new Rectangle(0, 0, this.Width, selectionRect.Top)); // Top
+            e.Graphics.FillRectangle(dimBrush, new Rectangle(0, selectionRect.Bottom, this.Width, this.Height - selectionRect.Bottom)); // Bottom
+            e.Graphics.FillRectangle(dimBrush, new Rectangle(0, selectionRect.Top, selectionRect.Left, selectionRect.Height)); // Left
+            e.Graphics.FillRectangle(dimBrush, new Rectangle(selectionRect.Right, selectionRect.Top, this.Width - selectionRect.Right, selectionRect.Height)); // Right
         }
     }
 
