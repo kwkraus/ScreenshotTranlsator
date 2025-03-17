@@ -10,6 +10,7 @@ public class ScreenCaptureOverlay : Form
     private bool isSelecting = false;
     private bool hasSelection = false;
     private Region? invalidRegion;
+    private Bitmap? originalScreenImage;
 
     public event EventHandler<Bitmap>? ScreenshotCaptured;
 
@@ -20,6 +21,7 @@ public class ScreenCaptureOverlay : Form
 
     private void InitializeOverlay()
     {
+        CaptureOriginalScreen();
         // Set up the overlay form
         this.FormBorderStyle = FormBorderStyle.None;
         this.WindowState = FormWindowState.Maximized;
@@ -42,6 +44,30 @@ public class ScreenCaptureOverlay : Form
         
         // Add handler for proper cleanup when form closes
         this.FormClosing += OnFormClosing;
+    }
+
+    private void CaptureOriginalScreen()
+    {
+        try
+        {
+            var screen = Screen.PrimaryScreen;
+            if (screen != null)
+            {
+                originalScreenImage = new Bitmap(screen.Bounds.Width, screen.Bounds.Height);
+                using (Graphics g = Graphics.FromImage(originalScreenImage))
+                {
+                    g.CopyFromScreen(0, 0, 0, 0, originalScreenImage.Size);
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("Primary screen is not available.");
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error capturing original screen: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private void OnMouseDown(object? sender, MouseEventArgs e)
@@ -169,8 +195,11 @@ public class ScreenCaptureOverlay : Form
                 g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
                 
-                // Capture the screen portion
-                g.CopyFromScreen(screenPoint, Point.Empty, selectionRect.Size);
+                // Capture the screen portion from the original image
+                if (originalScreenImage != null)
+                {
+                    g.DrawImage(originalScreenImage, new Rectangle(0, 0, selectionRect.Width, selectionRect.Height), selectionRect, GraphicsUnit.Pixel);
+                }
             }
             
             // Copy the image to clipboard
