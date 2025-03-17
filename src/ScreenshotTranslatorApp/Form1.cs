@@ -90,8 +90,9 @@ public partial class Form1 : Form
         {
             capturedImage?.Dispose();
             capturedImage = bitmap;
-            // Here you can add code to process the captured image
-            // For example, send it to your translation API
+            // Show the captured image in the SnipPreviewForm
+            var previewForm = new SnipPreviewForm(capturedImage);
+            previewForm.Show();
         };
         overlay.Show();
     }
