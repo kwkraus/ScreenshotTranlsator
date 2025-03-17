@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Gma.System.MouseKeyHook;
 
 namespace ScreenshotTranslatorApp;
 
@@ -21,16 +22,21 @@ public partial class Form1 : Form
 {
     private NotifyIcon notifyIcon;
     private ContextMenuStrip contextMenu;
+    private IKeyboardMouseEvents globalHook;
+    private Bitmap? capturedImage;
+
+    private const string combination = "Control+Shift+W";
 
     public Form1()
     {
         InitializeComponent();
         InitializeNotifyIcon();
+        InitializeGlobalHotkey();
         
         // Add a simple "Hello World" label
         Label helloLabel = new Label
         {
-            Text = "Hello World",
+            Text = $"Screenshot Translator\nPress {combination} to capture",
             AutoSize = true,
             Location = new Point(50, 50),
             Font = new Font(Font.FontFamily, 14)
@@ -48,7 +54,7 @@ public partial class Form1 : Form
         this.FormClosing += Form1_FormClosing;
         this.Shown += Form1_Shown;
     }
-    
+
     private void InitializeNotifyIcon()
     {
         // Create context menu with Exit option
@@ -66,6 +72,28 @@ public partial class Form1 : Form
         
         // Show form when the notify icon is double-clicked
         notifyIcon.DoubleClick += NotifyIcon_DoubleClick;
+    }
+
+    private void InitializeGlobalHotkey()
+    {
+        globalHook = Hook.GlobalEvents();
+        globalHook.OnCombination(new Dictionary<Combination, Action>()
+        {
+            {Combination.FromString(combination), () => BeginScreenCapture()}
+        });
+    }
+
+    private void BeginScreenCapture()
+    {
+        var overlay = new ScreenCaptureOverlay();
+        overlay.ScreenshotCaptured += (sender, bitmap) =>
+        {
+            capturedImage?.Dispose();
+            capturedImage = bitmap;
+            // Here you can add code to process the captured image
+            // For example, send it to your translation API
+        };
+        overlay.Show();
     }
 
     private void NotifyIcon_DoubleClick(object? sender, EventArgs e)
@@ -98,5 +126,16 @@ public partial class Form1 : Form
     {
         // Hide the form on initial start
         this.Hide();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            globalHook?.Dispose();
+            capturedImage?.Dispose();
+            notifyIcon?.Dispose();
+        }
+        base.Dispose(disposing);
     }
 }
