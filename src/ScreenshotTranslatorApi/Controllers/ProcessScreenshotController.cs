@@ -16,12 +16,13 @@ public class ProcessScreenshotController : ControllerBase
     [HttpPost("process-screenshot")]
     public IActionResult ProcessScreenshot()
     {
-        var response = new { 
-            status = "success", 
-            translatedText = "Mock Translation", 
-            imageWithOverlay = "" 
+        var response = new
+        {
+            status = "success",
+            translatedText = "Mock Translation",
+            imageWithOverlay = ""
         };
-        
+
         return Ok(response);
     }
 }

@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Gma.System.MouseKeyHook;
 
 namespace ScreenshotTranslatorApp;
@@ -32,7 +31,7 @@ public partial class Form1 : Form
         InitializeComponent();
         InitializeNotifyIcon();
         InitializeGlobalHotkey();
-        
+
         // Add a simple "Hello World" label
         Label helloLabel = new Label
         {
@@ -41,13 +40,13 @@ public partial class Form1 : Form
             Location = new Point(50, 50),
             Font = new Font(Font.FontFamily, 14)
         };
-        
+
         this.Controls.Add(helloLabel);
         this.Text = "Screenshot Translator";
         this.FormBorderStyle = FormBorderStyle.FixedSingle;
         this.StartPosition = FormStartPosition.CenterScreen;
         this.Size = new Size(300, 200);
-        
+
         // Hide form when minimized and on start
         this.WindowState = FormWindowState.Minimized;
         this.ShowInTaskbar = false;
@@ -69,7 +68,7 @@ public partial class Form1 : Form
             Visible = true,
             ContextMenuStrip = contextMenu
         };
-        
+
         // Show form when the notify icon is double-clicked
         notifyIcon.DoubleClick += NotifyIcon_DoubleClick;
     }

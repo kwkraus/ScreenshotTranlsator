@@ -1,5 +1,3 @@
-using System.Drawing.Imaging;
-
 namespace ScreenshotTranslatorApp;
 
 public class ScreenCaptureOverlay : Form
@@ -24,23 +22,23 @@ public class ScreenCaptureOverlay : Form
     {
         // Capture the composite screen image first
         CaptureOriginalScreen();
-        
+
         // Set up the overlay form to cover all screens
         this.FormBorderStyle = FormBorderStyle.None;
         this.BackColor = Color.Black;
         this.Opacity = 0.3;
         this.Cursor = Cursors.Cross;
         this.TopMost = true;
-        
+
         // Position and size the form to cover the entire virtual screen area
         this.StartPosition = FormStartPosition.Manual;
         this.Location = new Point(virtualScreenBounds.Left, virtualScreenBounds.Top);
         this.Size = new Size(virtualScreenBounds.Width, virtualScreenBounds.Height);
         this.ShowInTaskbar = false;
-        
+
         // Improve rendering performance
         this.DoubleBuffered = true;
-        this.SetStyle(ControlStyles.OptimizedDoubleBuffer | 
+        this.SetStyle(ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.AllPaintingInWmPaint |
                      ControlStyles.UserPaint, true);
 
@@ -49,7 +47,7 @@ public class ScreenCaptureOverlay : Form
         this.MouseMove += OnMouseMove;
         this.MouseUp += OnMouseUp;
         this.KeyDown += OnKeyDown;
-        
+
         // Add handler for proper cleanup when form closes
         this.FormClosing += OnFormClosing;
     }
@@ -60,10 +58,10 @@ public class ScreenCaptureOverlay : Form
         {
             // Get the bounds of the virtual screen (all monitors combined)
             virtualScreenBounds = SystemInformation.VirtualScreen;
-            
+
             // Create a bitmap that can hold all screens
             originalScreenImage = new Bitmap(virtualScreenBounds.Width, virtualScreenBounds.Height);
-            
+
             using (Graphics g = Graphics.FromImage(originalScreenImage))
             {
                 // Copy from the entire virtual screen area
@@ -109,13 +107,13 @@ public class ScreenCaptureOverlay : Form
         int height = Math.Abs(e.Y - startPoint.Y);
 
         selectionRect = new Rectangle(x, y, width, height);
-        
+
         // Create a region that encompasses both the previous and current selection
         Rectangle invalidateRect = Rectangle.Union(previousRect, selectionRect);
-        
+
         // Add some padding to ensure complete coverage of the border
         invalidateRect.Inflate(3, 3);
-        
+
         // Use region for more efficient invalidation
         invalidRegion?.Dispose();
         invalidRegion = new Region(invalidateRect);
@@ -148,7 +146,7 @@ public class ScreenCaptureOverlay : Form
         this.MouseUp -= OnMouseUp;
         this.KeyDown -= OnKeyDown;
         this.FormClosing -= OnFormClosing;
-        
+
         // Clean up any unmanaged resources
         invalidRegion?.Dispose();
         invalidRegion = null;
@@ -157,24 +155,24 @@ public class ScreenCaptureOverlay : Form
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
-        
+
         // Only paint if we have a valid selection with dimensions
         if (hasSelection && selectionRect.Width > 0 && selectionRect.Height > 0)
         {
             // Create a semi-transparent white fill for the selection area
             using var selectionBrush = new SolidBrush(Color.FromArgb(50, 255, 255, 255));
             e.Graphics.FillRectangle(selectionBrush, selectionRect);
-            
+
             // Draw a border - white inner border with a dark outer border for contrast
             using var whitePen = new Pen(Color.White, 1.5f);
             e.Graphics.DrawRectangle(whitePen, selectionRect);
-            
+
             // Draw second border (outer) to improve visibility against different backgrounds
             using var darkPen = new Pen(Color.FromArgb(150, 0, 0, 0), 1);
             Rectangle outerRect = new Rectangle(
-                selectionRect.X - 1, 
-                selectionRect.Y - 1, 
-                selectionRect.Width + 2, 
+                selectionRect.X - 1,
+                selectionRect.Y - 1,
+                selectionRect.Width + 2,
                 selectionRect.Height + 2);
             e.Graphics.DrawRectangle(darkPen, outerRect);
         }
@@ -184,7 +182,7 @@ public class ScreenCaptureOverlay : Form
     {
         if (selectionRect.Width <= 5 || selectionRect.Height <= 5)
         {
-            MessageBox.Show("Selection area is too small. Please make a larger selection.", 
+            MessageBox.Show("Selection area is too small. Please make a larger selection.",
                 "Invalid Selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
@@ -194,27 +192,27 @@ public class ScreenCaptureOverlay : Form
         {
             // Create a bitmap of the selection area
             capturedBitmap = new Bitmap(selectionRect.Width, selectionRect.Height);
-            
+
             using (var g = Graphics.FromImage(capturedBitmap))
             {
                 // Configure graphics for better quality
                 g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                 g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-                
+
                 // Extract the selected portion from our original screen capture
                 if (originalScreenImage != null)
                 {
-                    g.DrawImage(originalScreenImage, 
+                    g.DrawImage(originalScreenImage,
                         new Rectangle(0, 0, selectionRect.Width, selectionRect.Height),
                         selectionRect,
                         GraphicsUnit.Pixel);
                 }
             }
-            
+
             // Copy the image to clipboard
             Clipboard.SetImage(capturedBitmap);
-            
+
             // Create a copy for the event handler if needed
             if (ScreenshotCaptured != null)
             {
@@ -234,7 +232,7 @@ public class ScreenCaptureOverlay : Form
             capturedBitmap?.Dispose();
         }
     }
-    
+
     // Ensure proper disposal when the form is disposed
     protected override void Dispose(bool disposing)
     {

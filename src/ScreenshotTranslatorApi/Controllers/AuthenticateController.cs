@@ -16,11 +16,12 @@ public class AuthenticateController : ControllerBase
     [HttpPost]
     public IActionResult Post()
     {
-        var response = new { 
-            status = "success", 
-            message = "Stub authenticate" 
+        var response = new
+        {
+            status = "success",
+            message = "Stub authenticate"
         };
-        
+
         return Ok(response);
     }
 }
