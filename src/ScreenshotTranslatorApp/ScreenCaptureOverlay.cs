@@ -11,6 +11,7 @@ public class ScreenCaptureOverlay : Form
     private bool hasSelection = false;
     private Region? invalidRegion;
     private Bitmap? originalScreenImage;
+    private Rectangle virtualScreenBounds; // Added for virtual screen dimensions
 
     public event EventHandler<Bitmap>? ScreenshotCaptured;
 
@@ -21,14 +22,21 @@ public class ScreenCaptureOverlay : Form
 
     private void InitializeOverlay()
     {
+        // Capture the composite screen image first
         CaptureOriginalScreen();
-        // Set up the overlay form
+        
+        // Set up the overlay form to cover all screens
         this.FormBorderStyle = FormBorderStyle.None;
-        this.WindowState = FormWindowState.Maximized;
         this.BackColor = Color.Black;
         this.Opacity = 0.3;
         this.Cursor = Cursors.Cross;
         this.TopMost = true;
+        
+        // Position and size the form to cover the entire virtual screen area
+        this.StartPosition = FormStartPosition.Manual;
+        this.Location = new Point(virtualScreenBounds.Left, virtualScreenBounds.Top);
+        this.Size = new Size(virtualScreenBounds.Width, virtualScreenBounds.Height);
+        this.ShowInTaskbar = false;
         
         // Improve rendering performance
         this.DoubleBuffered = true;
@@ -50,23 +58,25 @@ public class ScreenCaptureOverlay : Form
     {
         try
         {
-            var screen = Screen.PrimaryScreen;
-            if (screen != null)
+            // Get the bounds of the virtual screen (all monitors combined)
+            virtualScreenBounds = SystemInformation.VirtualScreen;
+            
+            // Create a bitmap that can hold all screens
+            originalScreenImage = new Bitmap(virtualScreenBounds.Width, virtualScreenBounds.Height);
+            
+            using (Graphics g = Graphics.FromImage(originalScreenImage))
             {
-                originalScreenImage = new Bitmap(screen.Bounds.Width, screen.Bounds.Height);
-                using (Graphics g = Graphics.FromImage(originalScreenImage))
-                {
-                    g.CopyFromScreen(0, 0, 0, 0, originalScreenImage.Size);
-                }
-            }
-            else
-            {
-                throw new InvalidOperationException("Primary screen is not available.");
+                // Copy from the entire virtual screen area
+                g.CopyFromScreen(
+                    virtualScreenBounds.Left, virtualScreenBounds.Top, // Source point (virtual screen origin)
+                    0, 0,                                             // Destination point (bitmap origin)
+                    new Size(virtualScreenBounds.Width, virtualScreenBounds.Height) // Area to copy
+                );
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Error capturing original screen: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show($"Error capturing screen: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -187,18 +197,18 @@ public class ScreenCaptureOverlay : Form
             
             using (var g = Graphics.FromImage(capturedBitmap))
             {
-                // Get screen coordinates
-                var screenPoint = this.PointToScreen(new Point(selectionRect.X, selectionRect.Y));
-                
                 // Configure graphics for better quality
                 g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                 g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
                 
-                // Capture the screen portion from the original image
+                // Extract the selected portion from our original screen capture
                 if (originalScreenImage != null)
                 {
-                    g.DrawImage(originalScreenImage, new Rectangle(0, 0, selectionRect.Width, selectionRect.Height), selectionRect, GraphicsUnit.Pixel);
+                    g.DrawImage(originalScreenImage, 
+                        new Rectangle(0, 0, selectionRect.Width, selectionRect.Height),
+                        selectionRect,
+                        GraphicsUnit.Pixel);
                 }
             }
             
@@ -208,10 +218,10 @@ public class ScreenCaptureOverlay : Form
             // Create a copy for the event handler if needed
             if (ScreenshotCaptured != null)
             {
-                // Make a deep copy for the event handler
-                using var tempBitmap = new Bitmap(capturedBitmap);
+                // Create a copy of the bitmap for the event handler
+                var bitmapCopy = new Bitmap(capturedBitmap);
                 // Raise the event with the copied image
-                ScreenshotCaptured?.Invoke(this, tempBitmap);
+                ScreenshotCaptured?.Invoke(this, bitmapCopy);
             }
         }
         catch (Exception ex)
@@ -220,7 +230,7 @@ public class ScreenCaptureOverlay : Form
         }
         finally
         {
-            // Always dispose of the bitmap
+            // Always dispose of the bitmap to prevent resource leaks
             capturedBitmap?.Dispose();
         }
     }
@@ -231,6 +241,7 @@ public class ScreenCaptureOverlay : Form
         if (disposing)
         {
             invalidRegion?.Dispose();
+            originalScreenImage?.Dispose();
         }
         base.Dispose(disposing);
     }
