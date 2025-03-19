@@ -46,14 +46,6 @@ public class AzureDocumentIntelligenceService : IOcrService
 
             foreach (var page in result.Pages)
             {
-                foreach (var word in page.Words)
-                {
-                    var span = word.Span;
-                    // Check confidence level
-                    if (word.Confidence < minConfidence)
-                        continue;
-                }
-
                 foreach (var line in page.Lines)
                 {
 
