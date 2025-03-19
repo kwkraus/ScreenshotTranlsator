@@ -86,7 +86,7 @@ public class AzureDocumentIntelligenceService : IOcrService
             {
                 float pointX = polygon[i];
                 float pointY = polygon[i + 1];
-                
+
                 minX = Math.Min(minX, pointX);
                 minY = Math.Min(minY, pointY);
                 maxX = Math.Max(maxX, pointX);

@@ -1,5 +1,6 @@
 using Azure;
 using Azure.AI.OpenAI;
+using OpenAI.Chat;
 using ScreenshotTranslatorApi.Services.Interfaces;
 using System.Text;
 
@@ -7,7 +8,7 @@ namespace ScreenshotTranslatorApi.Services;
 
 public class AzureOpenAITranslationService : ITranslationService
 {
-    private readonly OpenAIClient _openAIClient;
+    private readonly AzureOpenAIClient _openAIClient;
     private readonly string _deploymentName;
     private readonly ILogger<AzureOpenAITranslationService> _logger;
 
@@ -20,7 +21,7 @@ public class AzureOpenAITranslationService : ITranslationService
         _deploymentName = configuration["Azure:OpenAI:DeploymentName"]
             ?? throw new ArgumentNullException("Azure:OpenAI:DeploymentName not configured");
 
-        _openAIClient = new OpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
+        _openAIClient = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
         _logger = logger;
     }
 
@@ -30,23 +31,23 @@ public class AzureOpenAITranslationService : ITranslationService
         {
             _logger.LogInformation("Translating text to {targetLanguage}", targetLanguage);
 
-            var options = new ChatCompletionsOptions
+            var options = new ChatCompletionOptions
             {
-                DeploymentName = _deploymentName,
-                Messages =
-                {
-                    new ChatRequestSystemMessage(GetSystemPrompt(targetLanguage, sourceLanguage)),
-                    new ChatRequestUserMessage(sourceText)
-                },
-                Temperature = 0.3f,
-                MaxTokens = 2000
+                Temperature = 0.3f
             };
 
-            var response = await _openAIClient.GetChatCompletionsAsync(options);
-            var translatedText = response.Value.Choices[0].Message.Content;
+            var messages = new List<ChatMessage>()
+            {
+                new SystemChatMessage(GetSystemPrompt(targetLanguage, sourceLanguage)),
+                new UserChatMessage(sourceText)
+            };
+
+            var chatClient = _openAIClient.GetChatClient(_deploymentName);
+            var response = await chatClient.CompleteChatAsync(messages, options);
+            var translatedText = response.Value.Content.ToString() ?? string.Empty;
 
             _logger.LogInformation("Translation completed successfully");
-            return translatedText ?? string.Empty;
+            return translatedText;
         }
         catch (Exception ex)
         {
@@ -72,19 +73,20 @@ public class AzureOpenAITranslationService : ITranslationService
             const string delimiter = "|||SEGMENT_DELIMITER|||";
             var combinedText = string.Join(delimiter, sourceTexts);
 
-            var options = new ChatCompletionsOptions
+            var options = new ChatCompletionOptions
             {
-                Messages =
-                {
-                    new ChatRequestSystemMessage(GetBatchTranslationPrompt(targetLanguage, sourceLanguage, delimiter)),
-                    new ChatRequestUserMessage(combinedText)
-                },
-                Temperature = 0.3f,
-                MaxTokens = 4000
+                Temperature = 0.3f
             };
 
-            var response = await _openAIClient.GetChatCompletionsAsync(options);
-            var translatedCombined = response.Value.Choices[0].Message.Content ?? string.Empty;
+            var messages = new List<ChatMessage>()
+            {
+                new SystemChatMessage(GetBatchTranslationPrompt(targetLanguage, sourceLanguage, delimiter)),
+                new UserChatMessage(combinedText)
+            };
+
+            var chatClient = _openAIClient.GetChatClient(_deploymentName);
+            var response = await chatClient.CompleteChatAsync(messages, options);
+            var translatedCombined = response.Value.Content.ToString() ?? string.Empty;
 
             // Split the translated text back into segments
             var translatedTexts = translatedCombined.Split(delimiter, StringSplitOptions.None);
@@ -101,7 +103,7 @@ public class AzureOpenAITranslationService : ITranslationService
                 {
                     results.Add(await TranslateTextAsync(text, targetLanguage, sourceLanguage));
                 }
-                return results.ToArray();
+                return [.. results];
             }
 
             _logger.LogInformation("Batch translation completed successfully");
