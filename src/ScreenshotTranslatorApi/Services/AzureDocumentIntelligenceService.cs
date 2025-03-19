@@ -32,7 +32,7 @@ public class AzureDocumentIntelligenceService : IOcrService
             using var imageStream = new MemoryStream(imageBytes);
 
             // Analyze document
-            var options = new AnalyzeDocumentOptions("prebuild-read", new BinaryData(imageBytes));
+            var options = new AnalyzeDocumentOptions("prebuilt-read", new BinaryData(imageBytes));
 
             var operation = await _docIntelligenceClient.AnalyzeDocumentAsync(WaitUntil.Completed, options);
 

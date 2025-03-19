@@ -16,9 +16,14 @@ builder.Services.AddSwaggerGen();
 if (builder.Environment.IsDevelopment())
 {
     // Use mock services for development and testing
-    builder.Services.AddScoped<IOcrService, MockOcrService>();
-    builder.Services.AddScoped<ITranslationService, MockTranslationService>();
-    builder.Services.AddScoped<IImageProcessingService, MockImageProcessingService>();
+    //builder.Services.AddScoped<IOcrService, MockOcrService>();
+    //builder.Services.AddScoped<ITranslationService, MockTranslationService>();
+    //builder.Services.AddScoped<IImageProcessingService, MockImageProcessingService>();
+
+    builder.Services.AddScoped<IOcrService, AzureDocumentIntelligenceService>();
+    builder.Services.AddScoped<ITranslationService, AzureOpenAITranslationService>();
+    builder.Services.AddScoped<IImageProcessingService, ImageProcessingService>();
+
 }
 else
 {
