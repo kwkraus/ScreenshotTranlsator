@@ -112,7 +112,9 @@ public class MockTranslationService : ITranslationService
 
     public Task<string> TranslateTextAsync(string sourceText, string targetLanguage, string? sourceLanguage = null)
     {
-        _logger.LogInformation("Mock translation service processing text to {targetLanguage}", targetLanguage);
+        _logger.LogInformation("{ServiceName} processing text to {targetLanguage}",
+            nameof(MockTranslationService),
+            targetLanguage);
 
         // Check if we have a predefined translation
         if (_translations.TryGetValue(sourceText, out var languageTranslations) &&
@@ -165,6 +167,6 @@ public class MockTranslationService : ITranslationService
             results.Add(translatedText);
         }
 
-        return results.ToArray();
+        return [.. results];
     }
 }

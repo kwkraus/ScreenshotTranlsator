@@ -9,6 +9,7 @@ public class AzureDocumentIntelligenceService : IOcrService
 {
     private readonly DocumentIntelligenceClient _docIntelligenceClient;
     private readonly ILogger<AzureDocumentIntelligenceService> _logger;
+    private readonly string _modelId;
 
     public AzureDocumentIntelligenceService(IConfiguration configuration, ILogger<AzureDocumentIntelligenceService> logger)
     {
@@ -16,6 +17,8 @@ public class AzureDocumentIntelligenceService : IOcrService
             ?? throw new ArgumentNullException("Azure:DocumentIntelligence:Endpoint not configured");
         var apiKey = configuration["Azure:DocumentIntelligence:ApiKey"]
             ?? throw new ArgumentNullException("Azure:DocumentIntelligence:ApiKey not configured");
+        _modelId = configuration["Azure:DocumentIntelligence:ModelId"]
+            ?? throw new ArgumentNullException("Azure:DocumentIntelligence:ModelId not configured");
 
         _docIntelligenceClient = new DocumentIntelligenceClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
         _logger = logger;
@@ -32,7 +35,7 @@ public class AzureDocumentIntelligenceService : IOcrService
             using var imageStream = new MemoryStream(imageBytes);
 
             // Analyze document
-            var options = new AnalyzeDocumentOptions("prebuilt-read", new BinaryData(imageBytes));
+            var options = new AnalyzeDocumentOptions(_modelId, new BinaryData(imageBytes));
 
             var operation = await _docIntelligenceClient.AnalyzeDocumentAsync(WaitUntil.Completed, options);
 
@@ -43,8 +46,17 @@ public class AzureDocumentIntelligenceService : IOcrService
 
             foreach (var page in result.Pages)
             {
+                foreach (var word in page.Words)
+                {
+                    var span = word.Span;
+                    // Check confidence level
+                    if (word.Confidence < minConfidence)
+                        continue;
+                }
+
                 foreach (var line in page.Lines)
                 {
+
                     // Skip empty lines or lines with very low confidence
                     if (string.IsNullOrWhiteSpace(line.Content))
                         continue;

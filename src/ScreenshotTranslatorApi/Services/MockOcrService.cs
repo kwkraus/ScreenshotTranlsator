@@ -18,7 +18,7 @@ public class MockOcrService : IOcrService
 
     public Task<List<TextElement>> RecognizeTextAsync(string base64Image, float minConfidence = 0.6f)
     {
-        _logger.LogInformation("Mock OCR service processing image");
+        _logger.LogInformation("{ServiceName} processing image", nameof(MockOcrService));
 
         // For test purposes, we'll create some random text elements with bounding boxes
         var textElements = new List<TextElement>();
@@ -64,7 +64,7 @@ public class MockOcrService : IOcrService
             });
         }
 
-        _logger.LogInformation("Mock OCR service detected {count} text elements", textElements.Count);
+        _logger.LogInformation("{ServiceName} detected {count} text elements", nameof(MockOcrService), textElements.Count);
         return Task.FromResult(textElements);
     }
 }
