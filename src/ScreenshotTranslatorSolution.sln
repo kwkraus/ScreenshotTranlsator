@@ -11,8 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScreenshotTranslatorApi.Tes
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
-		Images\The Making of the Postwar Working Class - Cultural Pluralism and Social Structure in World War II - base64.txt = Images\The Making of the Postwar Working Class - Cultural Pluralism and Social Structure in World War II - base64.txt
+		Images\grammar-clipart-english-language-development-new-years-shower.png = Images\grammar-clipart-english-language-development-new-years-shower.png
+		Images\grammar-clipart-english-language-development-new-years-shower.txt = Images\grammar-clipart-english-language-development-new-years-shower.txt
 		Images\The Making of the Postwar Working Class - Cultural Pluralism and Social Structure in World War II.png = Images\The Making of the Postwar Working Class - Cultural Pluralism and Social Structure in World War II.png
+		Images\The Making of the Postwar Working Class - Cultural Pluralism and Social Structure in World War II.txt = Images\The Making of the Postwar Working Class - Cultural Pluralism and Social Structure in World War II.txt
 	EndProjectSection
 EndProject
 Global
