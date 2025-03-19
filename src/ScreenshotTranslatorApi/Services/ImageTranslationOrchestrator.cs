@@ -5,24 +5,16 @@ using System.Diagnostics;
 
 namespace ScreenshotTranslatorApi.Services;
 
-public class ImageTranslationOrchestrator
+public class ImageTranslationOrchestrator(
+    IOcrService ocrService,
+    ITranslationService translationService,
+    IImageProcessingService imageProcessingService,
+    ILogger<ImageTranslationOrchestrator> logger)
 {
-    private readonly IOcrService _ocrService;
-    private readonly ITranslationService _translationService;
-    private readonly IImageProcessingService _imageProcessingService;
-    private readonly ILogger<ImageTranslationOrchestrator> _logger;
-
-    public ImageTranslationOrchestrator(
-        IOcrService ocrService,
-        ITranslationService translationService,
-        IImageProcessingService imageProcessingService,
-        ILogger<ImageTranslationOrchestrator> logger)
-    {
-        _ocrService = ocrService;
-        _translationService = translationService;
-        _imageProcessingService = imageProcessingService;
-        _logger = logger;
-    }
+    private readonly IOcrService _ocrService = ocrService;
+    private readonly ITranslationService _translationService = translationService;
+    private readonly IImageProcessingService _imageProcessingService = imageProcessingService;
+    private readonly ILogger<ImageTranslationOrchestrator> _logger = logger;
 
     public async Task<ProcessScreenshotResponse> ProcessImageAsync(ProcessScreenshotRequest request)
     {
