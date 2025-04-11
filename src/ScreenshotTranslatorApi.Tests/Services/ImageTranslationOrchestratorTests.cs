@@ -169,4 +169,64 @@ public class ImageTranslationOrchestratorTests
         Assert.NotNull(result.ErrorMessage);
         Assert.Contains("Translation service error", result.ErrorMessage!);
     }
+
+    [Fact]
+    public async Task ProcessImageAsync_WithCorrectTextOverlay_ReturnsSuccessResponse()
+    {
+        // Arrange
+        var request = new ProcessScreenshotRequest
+        {
+            Image = "base64image",
+            TargetLanguage = "es",
+            SourceLanguage = "en",
+            FilterLowConfidenceResults = true,
+            MinConfidenceThreshold = 0.7f
+        };
+
+        var textElements = new List<TextElement>
+        {
+            new TextElement
+            {
+                OriginalText = "Hello world",
+                Confidence = 0.95f,
+                BoundingBox = new BoundingBox { X = 10, Y = 10, Width = 100, Height = 20 }
+            }
+        };
+
+        _ocrServiceMock.Setup(o => o.RecognizeTextAsync(request.Image, request.MinConfidenceThreshold))
+            .ReturnsAsync(textElements);
+
+        var translatedTexts = new[] { "Hola mundo" };
+
+        _translationServiceMock.Setup(t => t.TranslateTextsAsync(
+                It.Is<string[]>(arr => arr.Length == 1 && arr[0] == "Hello world"),
+                request.TargetLanguage,
+                request.SourceLanguage))
+            .ReturnsAsync(translatedTexts);
+
+        const string overlayedImage = "base64overlayed";
+        _imageProcessingServiceMock.Setup(i => i.OverlayTranslatedTextAsync(
+                request.Image,
+                It.Is<List<TextElement>>(elements =>
+                    elements.Count == 1 &&
+                    elements[0].OriginalText == "Hello world" &&
+                    elements[0].TranslatedText == "Hola mundo" &&
+                    elements[0].BoundingBox.X == 10 &&
+                    elements[0].BoundingBox.Y == 10 &&
+                    elements[0].BoundingBox.Width == 100 &&
+                    elements[0].BoundingBox.Height == 20)))
+            .ReturnsAsync(overlayedImage);
+
+        // Act
+        var result = await _orchestrator.ProcessImageAsync(request);
+
+        // Assert
+        Assert.Equal("success", result.Status);
+        Assert.Equal("Hola mundo", result.TranslatedText);
+        Assert.Equal(overlayedImage, result.ImageWithOverlay);
+        Assert.NotNull(result.Details);
+        Assert.Equal(1, result.Details!.DetectedElementCount);
+        Assert.Equal(1, result.Details.ProcessedElementCount);
+        Assert.Equal("es", result.Details.TargetLanguage);
+    }
 }
