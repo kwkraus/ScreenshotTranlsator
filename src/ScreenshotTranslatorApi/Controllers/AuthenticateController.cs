@@ -20,7 +20,7 @@ public class AuthenticateController : ControllerBase
         {
             status = "success",
             message = "Stub authenticate"
-        };
+        }
 
         return Ok(response);
     }
